@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertCircle, BookOpen, ChevronDown, ChevronUp, LoaderCircle, Search, X } from 'lucide-react'
+import { AlertCircle, ArrowUpRight, BookOpen, ChevronDown, ChevronUp, LoaderCircle, Search, X } from 'lucide-react'
 
 // Después de implementar el Apps Script como aplicación web, pega aquí la URL
 // que termina en /exec.
@@ -95,9 +95,38 @@ function loadSheetRows(url, parameters, onSuccess, onError) {
   }
 }
 
+function getSafeProjectUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim())
+    return url.protocol === 'https:' ? url.href : ''
+  } catch {
+    return ''
+  }
+}
+
+function getProjectPreviewUrl(value) {
+  const safeUrl = getSafeProjectUrl(value)
+  if (!safeUrl) return ''
+
+  const url = new URL(safeUrl)
+  const editorMatch = url.pathname.match(/^\/(document|spreadsheets|presentation)\/(?:u\/\d+\/)?d\/([^/]+)/)
+  if (editorMatch) {
+    return `${url.origin}/${editorMatch[1]}/d/${editorMatch[2]}/preview`
+  }
+
+  const driveFileMatch = url.pathname.match(/\/file\/d\/([^/]+)/)
+  const driveFileId = driveFileMatch?.[1] || url.searchParams.get('id')
+  if (url.hostname === 'drive.google.com' && driveFileId) {
+    return `https://drive.google.com/file/d/${driveFileId}/preview`
+  }
+
+  return safeUrl
+}
+
 export default function App() {
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('todos')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedRows, setExpandedRows] = useState(() => new Set())
@@ -106,10 +135,11 @@ export default function App() {
   const [selectedModules, setSelectedModules] = useState([])
   const [modulesLoading, setModulesLoading] = useState(false)
   const [modulesError, setModulesError] = useState('')
+  const [projectPreview, setProjectPreview] = useState(null)
 
   useEffect(() => {
     setVisibleCount(20)
-  }, [search])
+  }, [search, typeFilter])
 
   useEffect(() => {
     if (!selectedProgram) return undefined
@@ -119,6 +149,15 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [selectedProgram])
+
+  useEffect(() => {
+    if (!projectPreview) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setProjectPreview(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [projectPreview])
 
   useEffect(() => {
     if (!APPS_SCRIPT_URL.startsWith('https://script.google.com/macros/s/')) {
@@ -180,50 +219,72 @@ export default function App() {
 
   const visibleRows = useMemo(() => {
     const query = search.trim().toLocaleLowerCase()
-    if (!query) return rows
-    return rows.filter((row) =>
-      columns.map(({ key }) => row[key] || '').join(' ').toLocaleLowerCase().includes(query),
-    )
-  }, [rows, search])
+    const normalize = (value) => String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase()
+
+    return rows.filter((row) => {
+      const matchesType = typeFilter === 'todos' || normalize(row.tipo).includes(typeFilter)
+      const matchesSearch = !query || columns
+        .map(({ key }) => row[key] || '')
+        .join(' ')
+        .toLocaleLowerCase()
+        .includes(query)
+      return matchesType && matchesSearch
+    })
+  }, [rows, search, typeFilter])
 
   const displayedRows = visibleRows.slice(0, visibleCount)
   return (
-    <div className="min-h-screen bg-[#f5f6f2] text-[#20372b]">
-      <header className="border-b border-[#e1e6df] bg-white">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f5f6f2] text-[#20372b]">
+      <header className="shrink-0 border-b border-[#e1e6df] bg-white">
         <div className="mx-auto flex w-full flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <a href="#inicio" className="flex items-center gap-3" aria-label="Inicio">
-            <span className="grid size-11 place-items-center rounded-2xl bg-[#1d4d38] text-white">
-              <BookOpen size={21} strokeWidth={1.8} />
-            </span>
-            <span>
-              <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-[#698073]">Consulta académica</span>
-              <span className="mt-0.5 block font-serif text-xl leading-none text-[#20372b]">Registros disponibles</span>
-            </span>
-          </a>
-          <label className="flex h-11 w-full items-center gap-3 rounded-xl border border-[#dce3dc] bg-[#fbfcf9] px-4 sm:max-w-sm">
-            <Search size={17} className="shrink-0 text-[#7b8980]" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="w-full bg-transparent text-sm outline-none placeholder:text-[#9ba49e]"
-              placeholder="Buscar en la oferta académica"
-              aria-label="Buscar en la oferta académica"
-            />
-          </label>
-        </div>
-      </header>
-
-      <main id="inicio" className="mx-auto w-full px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-        <section className="mt-8 overflow-hidden rounded-2xl border border-[#e0e6df] bg-white shadow-[0_12px_38px_rgba(35,75,52,0.06)]" aria-label="Oferta académica disponible">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e8ece7] px-4 py-3 sm:px-5">
-            <h2 className="text-sm font-bold text-[#315b45]">2da LISTA DISPONIBLES</h2>
+          <div className="flex min-w-0 items-center gap-3">
+            <a href="#inicio" className="flex min-w-0 items-center gap-3" aria-label="Inicio">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#1d4d38] text-white">
+                <BookOpen size={21} strokeWidth={1.8} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-[#698073]">Consulta académica</span>
+                <span className="mt-0.5 block truncate font-serif text-xl leading-none text-[#20372b]">Registros disponibles</span>
+              </span>
+            </a>
             {!loading && !error && (
-              <span className="rounded-full bg-[#edf3ee] px-3 py-1 text-xs font-semibold text-[#315b45]">
+              <span className="shrink-0 rounded-full bg-[#edf3ee] px-2.5 py-1 text-xs font-semibold text-[#315b45]">
                 {visibleRows.length} {visibleRows.length === 1 ? 'registro' : 'registros'}
               </span>
             )}
           </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <label className="sr-only" htmlFor="type-filter">Filtrar por tipo</label>
+            <select
+              id="type-filter"
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value)}
+              className="h-11 w-full rounded-xl border border-[#dce3dc] bg-[#fbfcf9] px-3 text-sm text-[#53645a] outline-none focus:border-[#91a398] sm:w-48"
+            >
+              <option value="todos">Diplomado y maestría</option>
+              <option value="diplomado">Diplomado</option>
+              <option value="maestria">Maestría</option>
+            </select>
+            <label className="flex h-11 w-full items-center gap-3 rounded-xl border border-[#dce3dc] bg-[#fbfcf9] px-4 sm:max-w-sm">
+              <Search size={17} className="shrink-0 text-[#7b8980]" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="w-full bg-transparent text-sm outline-none placeholder:text-[#9ba49e]"
+                placeholder="Buscar en la oferta académica"
+                aria-label="Buscar en la oferta académica"
+              />
+            </label>
+          </div>
+        </div>
+      </header>
 
+      <main id="inicio" className="mx-auto flex min-h-0 w-full flex-1 flex-col px-4 py-3 sm:px-6 lg:px-8">
+        <section className="mt-1 flex min-h-0 flex-1 flex-col" aria-label="Oferta académica disponible">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
           {loading ? (
             <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-[#718078]">
               <LoaderCircle size={19} className="animate-spin text-[#315b45]" />
@@ -241,7 +302,7 @@ export default function App() {
               {rows.length ? 'No hay registros que coincidan con la búsqueda.' : 'La hoja no tiene registros disponibles.'}
             </div>
           ) : (
-            <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 2xl:grid-cols-3">
+            <div className="grid gap-4 py-4 sm:grid-cols-2 lg:grid-cols-3">
               {displayedRows.map((row, index) => {
                 const availabilityText = String(row.disponibilidad || '').toLocaleUpperCase()
                 const available = availabilityText.includes('DISPONIBLE') && !availabilityText.includes('NO DISPONIBLE')
@@ -250,11 +311,12 @@ export default function App() {
                 )
                 const rowKey = `${row.codigo}-${row.resolucion}-${index}`
                 const isExpanded = expandedRows.has(rowKey)
+                const projectUrl = getSafeProjectUrl(row.pyLeerDatos)
 
                 return (
                   <article
                     key={rowKey}
-                    className="relative min-w-0 rounded-xl border border-[#e5eae4] bg-[#fdfefc] p-4 transition duration-200 hover:border-[#c9d7cc] hover:shadow-[0_8px_24px_rgba(35,75,52,0.07)] sm:p-5"
+                    className="relative min-w-0 rounded-xl border border-t-2 border-[#e0e7df] border-t-[#91a98c] bg-white p-4 shadow-[0_3px_14px_rgba(35,75,52,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-[#c4d4c4] hover:shadow-[0_12px_28px_rgba(35,75,52,0.10)] sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="max-w-[55%] truncate pr-2 font-mono text-sm font-bold tracking-wide text-[#315b45]">
@@ -272,7 +334,7 @@ export default function App() {
                       {row.programa || 'Programa sin nombre'}
                     </h3>
 
-                    <div className="mt-4 flex items-center justify-between border-t border-[#e9eee8] pt-3">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-[#e9eee8] pt-3">
                       <button
                         type="button"
                         aria-expanded={isExpanded}
@@ -287,13 +349,37 @@ export default function App() {
                         {isExpanded ? 'Ocultar detalles' : 'Ver detalles'}
                         {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProgram(row)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[#dce6dc] px-3 py-1.5 text-xs font-semibold text-[#536c5a] transition hover:bg-[#f4f8f3]"
-                      >
-                        <BookOpen size={14} /> Ver módulos
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* <button
+                          type="button"
+                          onClick={() => setSelectedProgram(row)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[#dce6dc] px-2.5 py-1.5 text-xs font-semibold text-[#536c5a] transition hover:bg-[#f4f8f3]"
+                        >
+                          <BookOpen size={14} /> Ver módulos
+                        </button> */}
+                        {projectUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setProjectPreview({
+                              url: projectUrl,
+                              previewUrl: getProjectPreviewUrl(projectUrl),
+                              title: row.programa || row.codigo || 'Proyecto académico',
+                            })}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#1d4d38] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#153927]"
+                          >
+                            Ver proyecto <ArrowUpRight size={14} />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            title="Este registro todavía no tiene un enlace de proyecto."
+                            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full bg-[#e8ece8] px-2.5 py-1.5 text-xs font-semibold text-[#87948b]"
+                          >
+                            Ver proyecto <ArrowUpRight size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {isExpanded && (
@@ -332,9 +418,10 @@ export default function App() {
               )}
             </div>
           )}
+          </div>
         </section>
 
-        <p className="mt-4 text-xs leading-5 text-[#8a968e]">
+        <p className="mt-2 shrink-0 text-xs leading-5 text-[#8a968e]">
           La información mostrada proviene de la hoja de cálculo y se presenta en modo de consulta.
         </p>
       </main>
@@ -427,7 +514,64 @@ export default function App() {
         </div>
       )}
 
-      <footer className="border-t border-[#e1e6df] bg-white px-4 py-5 text-center text-xs text-[#8a968e] sm:px-6 lg:px-8">
+      {projectPreview && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-[#17271f]/60 p-0 backdrop-blur-sm sm:items-center sm:p-5"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setProjectPreview(null)
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="project-preview-title"
+            className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-3xl border border-[#e1e8df] bg-[#f7f8f5] shadow-2xl sm:rounded-3xl"
+          >
+            <header className="flex items-center justify-between gap-4 border-b border-[#e5ebe3] bg-white px-5 py-4 sm:px-6">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#748578]">Vista previa del proyecto</p>
+                <h2 id="project-preview-title" className="mt-1 truncate text-base font-semibold text-[#20372b] sm:text-lg">
+                  {projectPreview.title}
+                </h2>
+              </div>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setProjectPreview(null)}
+                aria-label="Cerrar vista previa"
+                className="grid size-10 shrink-0 place-items-center rounded-full border border-[#e1e8df] bg-white text-[#607268] transition hover:bg-[#f2f5f0]"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="min-h-0 flex-1 p-3 sm:p-5">
+              <iframe
+                src={projectPreview.previewUrl}
+                title={`Vista previa de ${projectPreview.title}`}
+                className="h-[60vh] min-h-[280px] w-full rounded-xl border border-[#dfe5de] bg-white sm:rounded-2xl"
+                allowFullScreen
+              />
+            </div>
+
+            <footer className="flex flex-col items-center justify-between gap-3 border-t border-[#e5ebe3] bg-white px-5 py-4 sm:flex-row sm:px-6">
+              <p className="text-center text-xs text-[#87948b] sm:text-left">
+                Si no aparece la vista previa, abre el proyecto directamente.
+              </p>
+              <a
+                href={projectPreview.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#1d4d38] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#153927]"
+              >
+                Entrar al proyecto <ArrowUpRight size={16} />
+              </a>
+            </footer>
+          </section>
+        </div>
+      )}
+
+      <footer className="shrink-0 border-t border-[#e1e6df] bg-white px-4 py-4 text-center text-xs text-[#8a968e] sm:px-6 lg:px-8">
         Consulta académica · Información de registros disponibles
       </footer>
     </div>
