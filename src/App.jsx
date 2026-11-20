@@ -169,6 +169,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#f7f8f4] text-[#20372b]">
+      <div className="bg-[#20372b] px-5 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75 sm:px-8 sm:text-xs">
+        <span className="text-[#e5bd76]">Admisiones 2027</span>
+        <span className="mx-2 text-white/35">·</span>
+        Inscripciones abiertas para el nuevo ciclo
+        <a href="#admision" className="ml-2 underline decoration-white/30 underline-offset-4 transition hover:text-white">Conoce más</a>
+      </div>
       <header className="relative z-30 border-b border-[#dde5de] bg-[#fbfcf8]/95">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
           <Logo />
@@ -212,27 +218,27 @@ export default function App() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden bg-[#edf3ec]">
-          <div className="absolute left-[-180px] top-[-260px] size-[520px] rounded-full border border-[#cad8cc]" />
-          <div className="absolute left-[-100px] top-[-180px] size-[360px] rounded-full border border-[#d7e1d8]" />
-          <div className="absolute bottom-[-170px] right-[-100px] size-[420px] rounded-full border border-[#cad8cc]" />
+        <section className="relative overflow-hidden bg-[#f1f3eb]">
+          <div className="absolute -left-48 -top-64 size-[560px] rounded-full border border-[#d5ddcf]" />
+          <div className="absolute -left-24 -top-40 size-[360px] rounded-full border border-[#dce3d7]" />
+          <div className="absolute bottom-[-190px] right-[-100px] size-[420px] rounded-full border border-[#d5ddcf]" />
 
           <div className="mx-auto grid min-h-[590px] max-w-[1280px] items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:px-10">
             <div className="relative z-10">
-              <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#58705f]">
-                <span className="h-px w-8 bg-[#83988a]" />
-                Inscripciones abiertas
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#d5dfd4] bg-white/70 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#58705f] shadow-sm">
+                <span className="size-1.5 rounded-full bg-[#c28b43]" />
+                Tu futuro empieza aquí
               </div>
-              <h1 className="mt-6 max-w-[650px] text-[clamp(3.4rem,7.2vw,6.5rem)] font-medium leading-[0.87] tracking-[-0.075em] text-[#183629]">
-                Construye el futuro que
-                <span className="mt-2 block font-serif font-normal italic text-[#657a58]">imaginas.</span>
+              <h1 className="mt-7 max-w-[650px] text-[clamp(3.4rem,7.2vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.075em] text-[#183629]">
+                Elige lo que te mueve.
+                <span className="mt-3 block font-serif font-normal italic text-[#8b6939]">Crea lo que viene.</span>
               </h1>
               <p className="mt-7 max-w-lg text-base leading-7 text-[#66756d] sm:text-lg">
-                Encuentra el programa académico que acompaña tus talentos, tus intereses y tus proyectos de vida.
+                Una formación que conecta tus ideas con oportunidades reales. Descubre el programa que va contigo.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#programas" className="inline-flex items-center gap-3 rounded-full bg-[#1d4d38] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#153927]">
-                  Explorar programas <ArrowRight size={16} />
+                <a href="#programas" className="inline-flex items-center gap-3 rounded-full bg-[#1d4d38] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(29,77,56,0.18)] transition hover:-translate-y-0.5 hover:bg-[#153927]">
+                  Encuentra tu programa <ArrowRight size={16} />
                 </a>
                 <a href="#admision" className="inline-flex items-center gap-2 rounded-full border border-[#bdc9c0] px-6 py-3.5 text-sm font-bold text-[#315b45] transition hover:border-[#315b45]">
                   Proceso de admisión
@@ -258,25 +264,35 @@ export default function App() {
             </div>
 
             <div className="relative mx-auto h-[470px] w-full max-w-[470px]">
-              <div className="absolute inset-4 rounded-[48%_48%_22px_22px] bg-[#cad8c6]" />
-              <div className="absolute left-[12%] top-[10%] size-[76%] rounded-full border border-white/60" />
-              <div className="absolute left-[20%] top-[18%] size-[60%] rounded-full border border-white/50" />
-              <div className="absolute left-[31%] top-[25%] grid size-[38%] place-items-center rounded-full bg-[#f4f1df] shadow-[inset_-14px_-12px_30px_rgba(109,126,91,0.12)]">
-                <GraduationCap size={78} strokeWidth={1.1} className="text-[#4d694f]" />
+              <div className="absolute inset-4 overflow-hidden rounded-[46%_46%_28px_28px] bg-[#244c39] shadow-[0_28px_70px_rgba(33,62,44,0.2)]">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_68%_30%,rgba(207,177,119,0.32),transparent_38%),linear-gradient(145deg,#315d43,#193829_72%)]" />
+                <div className="absolute -right-20 top-8 size-80 rounded-full border border-white/10" />
+                <div className="absolute -right-8 top-20 size-56 rounded-full border border-white/10" />
+                <div className="absolute bottom-0 left-0 h-24 w-full bg-gradient-to-t from-black/20 to-transparent" />
+                <div className="absolute left-1/2 top-[42%] grid size-48 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#f0e8d5] shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+                  <div className="grid size-40 place-items-center rounded-full border border-[#c8b98f]">
+                    <GraduationCap size={82} strokeWidth={1.1} className="text-[#315b45]" />
+                  </div>
+                </div>
+                <div className="absolute bottom-7 left-7 text-white/70">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Universidad Aurora</p>
+                  <p className="mt-1 font-serif text-2xl italic text-white">Aprender para transformar.</p>
+                </div>
+                <span className="absolute right-8 top-8 grid size-12 place-items-center rounded-full border border-white/20 bg-white/10 text-[#e7c98e] backdrop-blur-sm"><Award size={22} /></span>
               </div>
-              <div className="absolute bottom-9 left-0 rounded-2xl border border-white/60 bg-white/90 px-5 py-4 shadow-xl backdrop-blur-sm">
+              <div className="absolute bottom-9 left-0 rounded-2xl border border-white/70 bg-white px-5 py-4 shadow-[0_18px_42px_rgba(35,75,52,0.16)]">
                 <div className="flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-full bg-[#e7eddf] text-[#315b45]">
-                    <Award size={19} />
+                    <Landmark size={19} />
                   </span>
                   <div>
-                    <p className="text-xs font-bold text-[#315b45]">Educación de calidad</p>
-                    <p className="mt-1 text-[11px] text-[#7a877f]">Acreditación institucional</p>
+                    <p className="text-xs font-bold text-[#315b45]">Aprendizaje con propósito</p>
+                    <p className="mt-1 text-[11px] text-[#7a877f]">Conocimiento que transforma</p>
                   </div>
                 </div>
               </div>
-              <div className="absolute bottom-16 right-0 grid size-24 place-items-center rounded-full bg-[#657a58] text-white shadow-xl">
-                <Users size={34} strokeWidth={1.5} />
+              <div className="absolute right-0 top-24 grid size-20 place-items-center rounded-full border-4 border-[#f1f3eb] bg-[#c18b46] text-white shadow-xl">
+                <span className="text-center"><Users size={21} className="mx-auto" /><span className="mt-1 block text-[9px] font-bold uppercase tracking-wider">Comunidad</span></span>
               </div>
             </div>
           </div>
