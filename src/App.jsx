@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, ArrowUpRight, BookOpen, ChevronDown, ChevronUp, LoaderCircle, Search, X } from 'lucide-react'
 
-// Después de implementar el Apps Script como aplicación web, pega aquí la URL
-// que termina en /exec.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-e6rvhTC9iTCeAyPWxYJ6oPsruNWhif9zvhqjVm8L8O7yQnV6eVTssztQdU1RYTZt7Q/exec'
+const SPREADSHEET_ID = '1UuL9khCaSuTgWa3jEuwT-Diah1OUquuLMi_9iwoQ4MY'
+const PROGRAMS_SHEET = '2da LISTA DISPONIBLES'
+const MODULES_SHEET = 'MALLAS'
 
 const columns = [
   { key: 'codigo', label: 'COD-ACADEM' },
@@ -17,6 +17,21 @@ const columns = [
   { key: 'modulos', label: 'N MODULOS' },
   { key: 'disponibilidad', label: 'DISPONIBILIDAD' },
 ]
+
+const programFields = [
+  ...columns.map((column) => ({ ...column, header: column.label })),
+  { key: 'pyLeerDatos', header: 'PY LEER DATOS' },
+]
+
+const moduleFields = [
+  { key: 'codigo', header: 'COD-ACADEM' },
+  { key: 'numero', header: 'NRO. MÓDULO' },
+  { key: 'nombre', header: 'NOMBRE DE MÓDULO' },
+  { key: 'contenido', header: 'CONTENIDO MÍNIMO' },
+]
+
+/* Lector anterior de Apps Script, conservado pero desactivado.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-e6rvhTC9iTCeAyPWxYJ6oPsruNWhif9zvhqjVm8L8O7yQnV6eVTssztQdU1RYTZt7Q/exec'
 
 function loadSheetRows(url, parameters, onSuccess, onError) {
   const callbackName = `__availableRows_${Date.now()}_${Math.random().toString(36).slice(2)}`
@@ -94,6 +109,92 @@ function loadSheetRows(url, parameters, onSuccess, onError) {
     console.info('[hoja] Se limpió la petición del Apps Script.')
   }
 }
+*/
+
+function loadPublicSheet(sheetName) {
+  const callbackName = `__publicSheet_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  const script = document.createElement('script')
+  const params = new URLSearchParams({
+    sheet: sheetName,
+    headers: '1',
+    tqx: `out:json;responseHandler:${callbackName}`,
+  })
+  const requestUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?${params.toString()}`
+  let timeoutId
+
+  const cleanup = () => {
+    window.clearTimeout(timeoutId)
+    delete window[callbackName]
+    script.remove()
+  }
+
+  const promise = new Promise((resolve, reject) => {
+    window[callbackName] = (response) => {
+      cleanup()
+      if (response?.status !== 'ok' || !response.table) {
+        const message = response?.errors?.[0]?.detailed_message
+          || response?.errors?.[0]?.message
+          || 'Google Sheets no devolvió datos para esta hoja.'
+        reject(new Error(message))
+        return
+      }
+
+      const headers = response.table.cols.map((column) => column.label || column.id || '')
+      const rows = (response.table.rows || []).map((row) =>
+        headers.map((_, index) => {
+          const cell = row.c?.[index]
+          return cell?.v ?? cell?.f ?? ''
+        }),
+      )
+
+      resolve({ headers, rows })
+    }
+
+    script.async = true
+    script.src = requestUrl
+    script.onerror = () => {
+      cleanup()
+      reject(new Error(`No se pudo leer la hoja pública “${sheetName}”.`))
+    }
+
+    timeoutId = window.setTimeout(() => {
+      cleanup()
+      reject(new Error(`La hoja “${sheetName}” tardó demasiado en responder.`))
+    }, 20000)
+    document.head.appendChild(script)
+  })
+
+  return { promise, cancel: cleanup }
+}
+
+function normalizeSheetHeader(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '')
+}
+
+function recordsFromSheet(headers, rows, fields) {
+  const normalizedHeaders = headers.map(normalizeSheetHeader)
+  const indexes = fields.map((field) => ({
+    ...field,
+    index: normalizedHeaders.indexOf(normalizeSheetHeader(field.header)),
+  }))
+  const missing = indexes.filter((field) => field.index < 0).map((field) => field.header)
+
+  if (missing.length) {
+    throw new Error(`Faltan columnas en Google Sheets: ${missing.join(', ')}`)
+  }
+
+  return rows.map((row) => {
+    const record = {}
+    indexes.forEach((field) => {
+      record[field.key] = row[field.index] ?? ''
+    })
+    return record
+  })
+}
 
 function getSafeProjectUrl(value) {
   try {
@@ -160,32 +261,29 @@ export default function App() {
   }, [projectPreview])
 
   useEffect(() => {
-    if (!APPS_SCRIPT_URL.startsWith('https://script.google.com/macros/s/')) {
-      console.error('[hoja] La URL de Apps Script no está configurada correctamente:', APPS_SCRIPT_URL)
-      setError('Falta pegar la URL de la aplicación web de Apps Script en src/App.jsx.')
-      setLoading(false)
-      return undefined
-    }
-
     setLoading(true)
     setError('')
-    return loadSheetRows(
-      APPS_SCRIPT_URL,
-      {},
-      (result) => {
-        if (!Array.isArray(result.data)) {
-          setError('La respuesta no contiene la lista de programas.')
-          setLoading(false)
-          return
-        }
-        setRows(result.data)
+    let active = true
+    const request = loadPublicSheet(PROGRAMS_SHEET)
+
+    request.promise
+      .then(({ headers, rows: sheetRows }) => {
+        const data = recordsFromSheet(headers, sheetRows, programFields)
+        if (!active) return
+        setRows(data)
         setLoading(false)
-      },
-      (message) => {
-        setError(message)
+      })
+      .catch((loadError) => {
+        if (!active) return
+        console.error('[hoja pública] Error leyendo programas:', loadError)
+        setError(loadError.message || 'No se pudieron leer los programas.')
         setLoading(false)
-      },
-    )
+      })
+
+    return () => {
+      active = false
+      request.cancel()
+    }
   }, [])
 
   useEffect(() => {
@@ -199,22 +297,40 @@ export default function App() {
     setModulesError('')
     setModulesLoading(true)
 
-    return loadSheetRows(
-      APPS_SCRIPT_URL,
-      { action: 'modules', code: selectedProgram.codigo },
-      (result) => {
-        if (!Array.isArray(result.modules)) {
-          setModulesError('La respuesta no contiene los módulos de este programa.')
-        } else {
-          setSelectedModules(result.modules)
-        }
+    let active = true
+    const request = loadPublicSheet(MODULES_SHEET)
+
+    request.promise
+      .then(({ headers, rows: sheetRows }) => {
+        const code = normalizeSheetHeader(selectedProgram.codigo)
+        const modules = recordsFromSheet(headers, sheetRows, moduleFields)
+          .filter((module) => normalizeSheetHeader(module.codigo) === code)
+          .map((module) => ({
+            ...module,
+            nombre: String(module.nombre || '').toLocaleUpperCase('es'),
+            contenido: String(module.contenido || '')
+              .split(/\r?\n/)
+              .map((line) => line.replace(/^["“]|["”]$/g, '').trim())
+              .filter(Boolean)
+              .map((line) => line.charAt(0).toLocaleUpperCase('es') + line.slice(1)),
+          }))
+          .sort((first, second) => Number(first.numero) - Number(second.numero))
+
+        if (!active) return
+        setSelectedModules(modules)
         setModulesLoading(false)
-      },
-      (message) => {
-        setModulesError(message)
+      })
+      .catch((loadError) => {
+        if (!active) return
+        console.error('[hoja pública] Error leyendo módulos:', loadError)
+        setModulesError(loadError.message || 'No se pudieron leer los módulos.')
         setModulesLoading(false)
-      },
-    )
+      })
+
+    return () => {
+      active = false
+      request.cancel()
+    }
   }, [selectedProgram])
 
   const visibleRows = useMemo(() => {
