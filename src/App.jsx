@@ -190,7 +190,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#f5f6f2] text-[#20372b]">
       <header className="border-b border-[#e1e6df] bg-white">
-        <div className="mx-auto flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <a href="#inicio" className="flex items-center gap-3" aria-label="Inicio">
             <span className="grid size-11 place-items-center rounded-2xl bg-[#1d4d38] text-white">
               <BookOpen size={21} strokeWidth={1.8} />
@@ -200,26 +200,7 @@ export default function App() {
               <span className="mt-0.5 block font-serif text-xl leading-none text-[#20372b]">Registros disponibles</span>
             </span>
           </a>
-          <span className="hidden items-center gap-2 rounded-full border border-[#e3e9e2] px-3.5 py-2 text-xs font-semibold text-[#607268] sm:inline-flex">
-            <span className="size-2 rounded-full bg-[#6f9a70]" />
-            Consulta de información
-          </span>
-        </div>
-      </header>
-
-      <main id="inicio" className="mx-auto w-full px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <div className="flex flex-col justify-between gap-7 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#718078]">Registro académico · UNSXX</p>
-            <h1 className="mt-2 font-serif text-3xl leading-tight tracking-[-0.04em] text-[#20372b] sm:text-4xl">
-              Oferta académica
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#68766f]">
-              Consulta programas, sedes, modalidades y disponibilidad en un solo lugar.
-            </p>
-          </div>
-
-          <label className="flex h-12 w-full items-center gap-3 rounded-xl border border-[#dce3dc] bg-white px-4 shadow-sm sm:w-80">
+          <label className="flex h-11 w-full items-center gap-3 rounded-xl border border-[#dce3dc] bg-[#fbfcf9] px-4 sm:max-w-sm">
             <Search size={17} className="shrink-0 text-[#7b8980]" />
             <input
               value={search}
@@ -230,7 +211,9 @@ export default function App() {
             />
           </label>
         </div>
+      </header>
 
+      <main id="inicio" className="mx-auto w-full px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
         <section className="mt-8 overflow-hidden rounded-2xl border border-[#e0e6df] bg-white shadow-[0_12px_38px_rgba(35,75,52,0.06)]" aria-label="Oferta académica disponible">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e8ece7] px-4 py-3 sm:px-5">
             <h2 className="text-sm font-bold text-[#315b45]">2da LISTA DISPONIBLES</h2>
