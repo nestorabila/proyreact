@@ -20,7 +20,7 @@ const columns = [
 
 const programFields = [
   ...columns.map((column) => ({ ...column, header: column.label })),
-  { key: 'pyLeerDatos', header: 'PY LEER DATOS' },
+  { key: 'pyLeerDatos', header: 'LINK PDF' },
 ]
 
 const moduleFields = [
@@ -353,21 +353,21 @@ export default function App() {
 
   const displayedRows = visibleRows.slice(0, visibleCount)
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#f5f6f2] text-[#20372b]">
-      <header className="shrink-0 border-b border-[#e1e6df] bg-white">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f4f6fa] text-[#1c2d47]">
+      <header className="shrink-0 border-b border-[#e0e5ed] bg-white">
         <div className="mx-auto flex w-full flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <a href="#inicio" className="flex min-w-0 items-center gap-3" aria-label="Inicio">
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#1d4d38] text-white">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#1c355c] text-white">
                 <BookOpen size={21} strokeWidth={1.8} />
               </span>
               <span className="min-w-0">
-                <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-[#698073]">Consulta académica</span>
-                <span className="mt-0.5 block truncate font-serif text-xl leading-none text-[#20372b]">Registros disponibles</span>
+                <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-[#667895]">Consulta académica</span>
+                <span className="mt-0.5 block truncate font-serif text-xl leading-none text-[#1c2d47]">Registros disponibles</span>
               </span>
             </a>
             {!loading && !error && (
-              <span className="shrink-0 rounded-full bg-[#edf3ee] px-2.5 py-1 text-xs font-semibold text-[#315b45]">
+              <span className="shrink-0 rounded-full bg-[#edf2f8] px-2.5 py-1 text-xs font-semibold text-[#27466f]">
                 {visibleRows.length} {visibleRows.length === 1 ? 'registro' : 'registros'}
               </span>
             )}
@@ -378,18 +378,18 @@ export default function App() {
               id="type-filter"
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.target.value)}
-              className="h-11 w-full rounded-xl border border-[#dce3dc] bg-[#fbfcf9] px-3 text-sm text-[#53645a] outline-none focus:border-[#91a398] sm:w-48"
+              className="h-11 w-full rounded-xl border border-[#dce3ee] bg-[#fafbfe] px-3 text-sm text-[#56657d] outline-none focus:border-[#8494ad] sm:w-48"
             >
               <option value="todos">Diplomado y maestría</option>
               <option value="diplomado">Diplomado</option>
               <option value="maestria">Maestría</option>
             </select>
-            <label className="flex h-11 w-full items-center gap-3 rounded-xl border border-[#dce3dc] bg-[#fbfcf9] px-4 sm:max-w-sm">
-              <Search size={17} className="shrink-0 text-[#7b8980]" />
+            <label className="flex h-11 w-full items-center gap-3 rounded-xl border border-[#dce3ee] bg-[#fafbfe] px-4 sm:max-w-sm">
+              <Search size={17} className="shrink-0 text-[#78869b]" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="w-full bg-transparent text-sm outline-none placeholder:text-[#9ba49e]"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-[#9aa5b5]"
                 placeholder="Buscar en la oferta académica"
                 aria-label="Buscar en la oferta académica"
               />
@@ -402,8 +402,8 @@ export default function App() {
         <section className="mt-1 flex min-h-0 flex-1 flex-col" aria-label="Oferta académica disponible">
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]">
           {loading ? (
-            <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-[#718078]">
-              <LoaderCircle size={19} className="animate-spin text-[#315b45]" />
+            <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-[#738197]">
+              <LoaderCircle size={19} className="animate-spin text-[#27466f]" />
               Cargando registros…
             </div>
           ) : error ? (
@@ -411,10 +411,10 @@ export default function App() {
               <span className="grid size-11 place-items-center rounded-full bg-[#fff4e7] text-[#9b682e]">
                 <AlertCircle size={20} />
               </span>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-[#68766f]">{error}</p>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-[#637188]">{error}</p>
             </div>
           ) : visibleRows.length === 0 ? (
-            <div className="flex min-h-56 items-center justify-center px-6 text-center text-sm text-[#718078]">
+            <div className="flex min-h-56 items-center justify-center px-6 text-center text-sm text-[#738197]">
               {rows.length ? 'No hay registros que coincidan con la búsqueda.' : 'La hoja no tiene registros disponibles.'}
             </div>
           ) : (
@@ -432,25 +432,25 @@ export default function App() {
                 return (
                   <article
                     key={rowKey}
-                    className="relative min-w-0 rounded-xl border border-t-2 border-[#e0e7df] border-t-[#91a98c] bg-white p-4 shadow-[0_3px_14px_rgba(35,75,52,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-[#c4d4c4] hover:shadow-[0_12px_28px_rgba(35,75,52,0.10)] sm:p-5"
+                    className="relative min-w-0 rounded-xl border border-t-2 border-[#e2e7f0] border-t-[#849ac0] bg-white p-4 shadow-[0_3px_14px_rgba(28,53,92,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-[#cbd5e5] hover:shadow-[0_12px_28px_rgba(28,53,92,0.10)] sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <span className="max-w-[55%] truncate pr-2 font-mono text-sm font-bold tracking-wide text-[#315b45]">
+                      <span className="max-w-[55%] truncate pr-2 font-mono text-sm font-bold tracking-wide text-[#27466f]">
                         {row.codigo || 'Sin código'}
                       </span>
                       {row.tipo && (
-                        <span className="absolute right-0 top-0 inline-flex max-w-[48%] items-center gap-2 truncate rounded-bl-xl rounded-tr-xl border-b border-l border-[#d8e8d9] bg-[#edf5ed] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#416b47]">
-                          <span className={`size-2 shrink-0 rounded-full ${available ? 'bg-[#54a36b] shadow-[0_0_0_3px_rgba(84,163,107,0.12)]' : 'bg-[#a1aaa3]'}`} />
+                        <span className="absolute right-0 top-0 inline-flex max-w-[48%] items-center gap-2 truncate rounded-bl-xl rounded-tr-xl border-b border-l border-[#d8e1ee] bg-[#eef3fa] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#2e4f7d]">
+                          <span className={`size-2 shrink-0 rounded-full ${available ? 'bg-[#355b91] shadow-[0_0_0_3px_rgba(53,91,145,0.14)]' : 'bg-[#98a3b4]'}`} />
                           {row.tipo}
                         </span>
                       )}
                     </div>
 
-                    <h3 className="mt-3 min-h-6 text-lg font-semibold leading-snug text-[#263b2f]">
+                    <h3 className="mt-3 min-h-6 text-lg font-semibold leading-snug text-[#1f304c]">
                       {row.programa || 'Programa sin nombre'}
                     </h3>
 
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-[#e9eee8] pt-3">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-[#e8ecf2] pt-3">
                       <button
                         type="button"
                         aria-expanded={isExpanded}
@@ -460,7 +460,7 @@ export default function App() {
                           else next.add(rowKey)
                           return next
                         })}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#416b47] transition hover:text-[#20372b]"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2e4f7d] transition hover:text-[#1c2d47]"
                       >
                         {isExpanded ? 'Ocultar detalles' : 'Ver detalles'}
                         {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -469,7 +469,7 @@ export default function App() {
                         {/* <button
                           type="button"
                           onClick={() => setSelectedProgram(row)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-[#dce6dc] px-2.5 py-1.5 text-xs font-semibold text-[#536c5a] transition hover:bg-[#f4f8f3]"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[#dce3ee] px-2.5 py-1.5 text-xs font-semibold text-[#4d5f7e] transition hover:bg-[#f3f6fb]"
                         >
                           <BookOpen size={14} /> Ver módulos
                         </button> */}
@@ -481,7 +481,7 @@ export default function App() {
                               previewUrl: getProjectPreviewUrl(projectUrl),
                               title: row.programa || row.codigo || 'Proyecto académico',
                             })}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-[#1d4d38] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#153927]"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#1c355c] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#132542]"
                           >
                             Ver proyecto <ArrowUpRight size={14} />
                           </button>
@@ -490,7 +490,7 @@ export default function App() {
                             type="button"
                             disabled
                             title="Este registro todavía no tiene un enlace de proyecto."
-                            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full bg-[#e8ece8] px-2.5 py-1.5 text-xs font-semibold text-[#87948b]"
+                            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full bg-[#e9edf3] px-2.5 py-1.5 text-xs font-semibold text-[#8692a6]"
                           >
                             Ver proyecto <ArrowUpRight size={14} />
                           </button>
@@ -499,13 +499,13 @@ export default function App() {
                     </div>
 
                     {isExpanded && (
-                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#e9eee8] pt-3 sm:grid-cols-3">
+                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#e8ecf2] pt-3 sm:grid-cols-3">
                         {detailColumns.map((column) => (
                           <div key={column.key} className="min-w-0">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#87948b]">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#8692a6]">
                               {column.label}
                             </p>
-                            <p className="mt-1 break-words text-sm leading-5 text-[#53645a]">
+                            <p className="mt-1 break-words text-sm leading-5 text-[#56657d]">
                               {row[column.key] || '—'}
                             </p>
                           </div>
@@ -519,15 +519,15 @@ export default function App() {
           )}
 
           {!loading && !error && visibleRows.length > 0 && (
-            <div className="flex flex-col items-center gap-2 border-t border-[#e8ece7] px-4 py-5">
-              <p className="text-xs text-[#87948b]">
+            <div className="flex flex-col items-center gap-2 border-t border-[#e8ecf2] px-4 py-5">
+              <p className="text-xs text-[#8692a6]">
                 Mostrando {displayedRows.length} de {visibleRows.length} registros
               </p>
               {displayedRows.length < visibleRows.length && (
                 <button
                   type="button"
                   onClick={() => setVisibleCount((count) => count + 20)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#d8e3d9] bg-white px-5 py-2.5 text-sm font-semibold text-[#315b45] shadow-sm transition hover:border-[#9fb5a3] hover:bg-[#f7faf6]"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#dbe3ef] bg-white px-5 py-2.5 text-sm font-semibold text-[#27466f] shadow-sm transition hover:border-[#9facbf] hover:bg-[#f7f9fd]"
                 >
                   Mostrar más <ChevronDown size={16} />
                 </button>
@@ -537,14 +537,14 @@ export default function App() {
           </div>
         </section>
 
-        <p className="mt-2 shrink-0 text-xs leading-5 text-[#8a968e]">
+        <p className="mt-2 shrink-0 text-xs leading-5 text-[#8994a5]">
           La información mostrada proviene de la hoja de cálculo y se presenta en modo de consulta.
         </p>
       </main>
 
       {selectedProgram && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#17271f]/55 p-0 backdrop-blur-sm sm:items-center sm:p-5"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#151f32]/55 p-0 backdrop-blur-sm sm:items-center sm:p-5"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setSelectedProgram(null)
           }}
@@ -553,22 +553,22 @@ export default function App() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="modules-dialog-title"
-            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-[#e1e8df] bg-[#fbfcf9] shadow-2xl sm:rounded-3xl"
+            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-[#e0e5ed] bg-[#fafbfe] shadow-2xl sm:rounded-3xl"
           >
-            <header className="flex items-start justify-between gap-5 border-b border-[#e5ebe3] bg-white px-5 py-5 sm:px-7">
+            <header className="flex items-start justify-between gap-5 border-b border-[#e4e8ef] bg-white px-5 py-5 sm:px-7">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#748578]">Malla curricular</p>
-                <h2 id="modules-dialog-title" className="mt-2 font-serif text-2xl leading-tight text-[#20372b] sm:text-3xl">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#77849a]">Malla curricular</p>
+                <h2 id="modules-dialog-title" className="mt-2 font-serif text-2xl leading-tight text-[#1c2d47] sm:text-3xl">
                   {selectedProgram.programa || 'Programa académico'}
                 </h2>
-                <p className="mt-2 font-mono text-xs font-semibold text-[#58705f]">{selectedProgram.codigo}</p>
+                <p className="mt-2 font-mono text-xs font-semibold text-[#5c6f8d]">{selectedProgram.codigo}</p>
               </div>
               <button
                 type="button"
                 autoFocus
                 onClick={() => setSelectedProgram(null)}
                 aria-label="Cerrar módulos"
-                className="grid size-10 shrink-0 place-items-center rounded-full border border-[#e1e8df] bg-white text-[#607268] transition hover:bg-[#f2f5f0]"
+                className="grid size-10 shrink-0 place-items-center rounded-full border border-[#e0e5ed] bg-white text-[#626f84] transition hover:bg-[#f1f4f8]"
               >
                 <X size={18} />
               </button>
@@ -576,8 +576,8 @@ export default function App() {
 
             <div className="overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
               {modulesLoading ? (
-                <div className="flex min-h-48 items-center justify-center gap-3 text-sm text-[#718078]">
-                  <LoaderCircle size={19} className="animate-spin text-[#315b45]" />
+                <div className="flex min-h-48 items-center justify-center gap-3 text-sm text-[#738197]">
+                  <LoaderCircle size={19} className="animate-spin text-[#27466f]" />
                   Cargando módulos…
                 </div>
               ) : modulesError ? (
@@ -585,34 +585,34 @@ export default function App() {
                   {modulesError}
                 </div>
               ) : selectedModules.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#d8e2d8] bg-white px-5 py-12 text-center text-sm text-[#718078]">
+                <div className="rounded-2xl border border-dashed border-[#d9e0eb] bg-white px-5 py-12 text-center text-sm text-[#738197]">
                   No se encontraron módulos para este código académico.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {selectedModules.map((module, index) => (
-                    <article key={`${module.numero}-${module.nombre}-${index}`} className="rounded-2xl border border-[#e1e8df] bg-white p-4 sm:p-5">
+                    <article key={`${module.numero}-${module.nombre}-${index}`} className="rounded-2xl border border-[#e0e5ed] bg-white p-4 sm:p-5">
                       <div className="flex items-start gap-4">
-                        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#edf4eb] font-mono text-sm font-bold text-[#416b47]">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#edf2f8] font-mono text-sm font-bold text-[#2e4f7d]">
                           {module.numero || index + 1}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#87948b]">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8692a6]">
                             Módulo {module.numero || index + 1}
                           </p>
-                          <h3 className="mt-1 text-sm font-bold uppercase leading-6 tracking-[0.025em] text-[#263b2f] sm:text-base">
+                          <h3 className="mt-1 text-sm font-bold uppercase leading-6 tracking-[0.025em] text-[#1f304c] sm:text-base">
                             {String(module.nombre || '').toLocaleUpperCase('es')}
                           </h3>
                           {Array.isArray(module.contenido) && module.contenido.length > 0 && (
-                            <ul className="mt-3 space-y-2 border-t border-[#edf0ed] pt-3">
+                            <ul className="mt-3 space-y-2 border-t border-[#edf0f5] pt-3">
                               {module.contenido.map((line, lineIndex) => {
                                 const text = String(line || '').trim()
                                 const formatted = text
                                   ? text.charAt(0).toLocaleUpperCase('es') + text.slice(1)
                                   : ''
                                 return formatted ? (
-                                  <li key={`${lineIndex}-${formatted}`} className="flex gap-2.5 text-sm leading-6 text-[#53645a]">
-                                    <span className="mt-[9px] size-1.5 shrink-0 rounded-full bg-[#83a082]" />
+                                  <li key={`${lineIndex}-${formatted}`} className="flex gap-2.5 text-sm leading-6 text-[#56657d]">
+                                    <span className="mt-[9px] size-1.5 shrink-0 rounded-full bg-[#7d94b8]" />
                                     <span>{formatted}</span>
                                   </li>
                                 ) : null
@@ -632,7 +632,7 @@ export default function App() {
 
       {projectPreview && (
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-[#17271f]/60 p-0 backdrop-blur-sm sm:items-center sm:p-5"
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-[#151f32]/60 p-0 backdrop-blur-sm sm:items-center sm:p-5"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setProjectPreview(null)
           }}
@@ -641,12 +641,12 @@ export default function App() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="project-preview-title"
-            className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-3xl border border-[#e1e8df] bg-[#f7f8f5] shadow-2xl sm:rounded-3xl"
+            className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-3xl border border-[#e0e5ed] bg-[#f5f6f9] shadow-2xl sm:rounded-3xl"
           >
-            <header className="flex items-center justify-between gap-4 border-b border-[#e5ebe3] bg-white px-5 py-4 sm:px-6">
+            <header className="flex items-center justify-between gap-4 border-b border-[#e4e8ef] bg-white px-5 py-4 sm:px-6">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#748578]">Vista previa del proyecto</p>
-                <h2 id="project-preview-title" className="mt-1 truncate text-base font-semibold text-[#20372b] sm:text-lg">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#77849a]">Vista previa del proyecto</p>
+                <h2 id="project-preview-title" className="mt-1 truncate text-base font-semibold text-[#1c2d47] sm:text-lg">
                   {projectPreview.title}
                 </h2>
               </div>
@@ -655,7 +655,7 @@ export default function App() {
                 autoFocus
                 onClick={() => setProjectPreview(null)}
                 aria-label="Cerrar vista previa"
-                className="grid size-10 shrink-0 place-items-center rounded-full border border-[#e1e8df] bg-white text-[#607268] transition hover:bg-[#f2f5f0]"
+                className="grid size-10 shrink-0 place-items-center rounded-full border border-[#e0e5ed] bg-white text-[#626f84] transition hover:bg-[#f1f4f8]"
               >
                 <X size={18} />
               </button>
@@ -665,20 +665,20 @@ export default function App() {
               <iframe
                 src={projectPreview.previewUrl}
                 title={`Vista previa de ${projectPreview.title}`}
-                className="h-[60vh] min-h-[280px] w-full rounded-xl border border-[#dfe5de] bg-white sm:rounded-2xl"
+                className="h-[60vh] min-h-[280px] w-full rounded-xl border border-[#e0e5ed] bg-white sm:rounded-2xl"
                 allowFullScreen
               />
             </div>
 
-            <footer className="flex flex-col items-center justify-between gap-3 border-t border-[#e5ebe3] bg-white px-5 py-4 sm:flex-row sm:px-6">
-              <p className="text-center text-xs text-[#87948b] sm:text-left">
+            <footer className="flex flex-col items-center justify-between gap-3 border-t border-[#e4e8ef] bg-white px-5 py-4 sm:flex-row sm:px-6">
+              <p className="text-center text-xs text-[#8692a6] sm:text-left">
                 Si no aparece la vista previa, abre el proyecto directamente.
               </p>
               <a
                 href={projectPreview.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#1d4d38] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#153927]"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#1c355c] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#132542]"
               >
                 Entrar al proyecto <ArrowUpRight size={16} />
               </a>
@@ -687,7 +687,7 @@ export default function App() {
         </div>
       )}
 
-      <footer className="shrink-0 border-t border-[#e1e6df] bg-white px-4 py-4 text-center text-xs text-[#8a968e] sm:px-6 lg:px-8">
+      <footer className="shrink-0 border-t border-[#e0e5ed] bg-white px-4 py-4 text-center text-xs text-[#8994a5] sm:px-6 lg:px-8">
         Consulta académica · Información de registros disponibles
       </footer>
     </div>
