@@ -1,434 +1,451 @@
-import { useState } from 'react'
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Award,
-  BriefcaseBusiness,
-  CalendarDays,
-  ChevronDown,
-  Clock3,
-  FlaskConical,
-  GraduationCap,
-  Landmark,
-  Menu,
-  MonitorCog,
-  Search,
-  Stethoscope,
-  Users,
-  X,
-} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { AlertCircle, BookOpen, ChevronDown, ChevronUp, LoaderCircle, Search, X } from 'lucide-react'
 
-const programs = [
-  {
-    name: 'Ingeniería de Sistemas',
-    faculty: 'Ingenierías',
-    level: 'Pregrado',
-    modality: 'Presencial',
-    duration: '10 semestres',
-    icon: MonitorCog,
-    color: 'bg-[#dce8df]',
-    accent: 'text-[#315b45]',
-    description: 'Diseña soluciones digitales, desarrolla software y transforma organizaciones mediante la tecnología.',
-  },
-  {
-    name: 'Administración de Empresas',
-    faculty: 'Ciencias económicas',
-    level: 'Pregrado',
-    modality: 'Presencial',
-    duration: '8 semestres',
-    icon: BriefcaseBusiness,
-    color: 'bg-[#e9dfcf]',
-    accent: 'text-[#74552f]',
-    description: 'Desarrolla capacidades para liderar empresas, proyectos y equipos con visión estratégica.',
-  },
-  {
-    name: 'Medicina',
-    faculty: 'Ciencias de la salud',
-    level: 'Pregrado',
-    modality: 'Presencial',
-    duration: '12 semestres',
-    icon: Stethoscope,
-    color: 'bg-[#d7e5e8]',
-    accent: 'text-[#2c5c65]',
-    description: 'Forma profesionales comprometidos con la salud, la investigación y el bienestar comunitario.',
-  },
-  {
-    name: 'Arquitectura',
-    faculty: 'Artes y diseño',
-    level: 'Pregrado',
-    modality: 'Presencial',
-    duration: '10 semestres',
-    icon: Landmark,
-    color: 'bg-[#eadbd5]',
-    accent: 'text-[#7a4b3d]',
-    description: 'Proyecta espacios innovadores con responsabilidad social, ambiental y cultural.',
-  },
-  {
-    name: 'Maestría en Educación',
-    faculty: 'Educación',
-    level: 'Posgrado',
-    modality: 'Virtual',
-    duration: '4 semestres',
-    icon: GraduationCap,
-    color: 'bg-[#dadde9]',
-    accent: 'text-[#4a5077]',
-    description: 'Fortalece tu práctica docente con enfoques contemporáneos e investigación aplicada.',
-  },
-  {
-    name: 'Biotecnología',
-    faculty: 'Ciencias naturales',
-    level: 'Pregrado',
-    modality: 'Híbrida',
-    duration: '10 semestres',
-    icon: FlaskConical,
-    color: 'bg-[#e1e4c9]',
-    accent: 'text-[#62662d]',
-    description: 'Investiga y crea soluciones sostenibles en salud, industria y protección ambiental.',
-  },
+// Después de implementar el Apps Script como aplicación web, pega aquí la URL
+// que termina en /exec.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-e6rvhTC9iTCeAyPWxYJ6oPsruNWhif9zvhqjVm8L8O7yQnV6eVTssztQdU1RYTZt7Q/exec'
+
+const columns = [
+  { key: 'codigo', label: 'COD-ACADEM' },
+  { key: 'resolucion', label: 'RESOLUCION' },
+  { key: 'area', label: 'AREA' },
+  { key: 'tipo', label: 'TIPO' },
+  { key: 'programa', label: 'PROGRAMA' },
+  { key: 'version', label: 'VERSION' },
+  { key: 'sede', label: 'SEDE UNSXX' },
+  { key: 'modalidad', label: 'MODALIDAD' },
+  { key: 'modulos', label: 'N MODULOS' },
+  { key: 'disponibilidad', label: 'DISPONIBILIDAD' },
 ]
 
-const filters = ['Todos', 'Pregrado', 'Posgrado', 'Virtual']
+function loadSheetRows(url, parameters, onSuccess, onError) {
+  const callbackName = `__availableRows_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  const script = document.createElement('script')
+  const separator = url.includes('?') ? '&' : '?'
+  const query = new URLSearchParams({ ...parameters, callback: callbackName })
+  const requestUrl = `${url}${separator}${query.toString()}`
+  let timeoutId
+  let callbackReceived = false
+  let scriptLoaded = false
+  let settled = false
 
-function Logo({ inverse = false }) {
-  return (
-    <a href="#" className="flex items-center gap-3" aria-label="Universidad Aurora, inicio">
-      <span className={`grid size-11 place-items-center rounded-full border ${inverse ? 'border-white/30 bg-white/10 text-white' : 'border-[#1d4d38]/15 bg-[#edf3ee] text-[#1d4d38]'}`}>
-        <Landmark size={21} strokeWidth={1.8} />
-      </span>
-      <span>
-        <span className={`block text-[15px] font-bold leading-none tracking-[0.08em] ${inverse ? 'text-white' : 'text-[#183629]'}`}>
-          UNIVERSIDAD
-        </span>
-        <span className={`mt-1 block font-serif text-xl leading-none ${inverse ? 'text-[#d9e7de]' : 'text-[#4d694f]'}`}>
-          Aurora
-        </span>
-      </span>
-    </a>
-  )
-}
+  console.info('[hoja] Iniciando conexión con Apps Script.', {
+    endpoint: url,
+    callback: callbackName,
+  })
 
-function ProgramCard({ program }) {
-  const Icon = program.icon
+  window[callbackName] = (result) => {
+    callbackReceived = true
+    settled = true
+    window.clearTimeout(timeoutId)
+    console.info('[hoja] Apps Script ejecutó el callback.', {
+      hasError: Boolean(result?.error),
+      rowCount: Array.isArray(result?.data) ? result.data.length : undefined,
+      moduleCount: Array.isArray(result?.modules) ? result.modules.length : undefined,
+      responseKeys: result && typeof result === 'object' ? Object.keys(result) : [],
+    })
+    if (result?.error) {
+      console.error('[hoja] El Apps Script devolvió un error:', result.error)
+      onError(result.error)
+    } else if (result && typeof result === 'object') {
+      onSuccess(result)
+    } else {
+      console.error('[hoja] La respuesta no tiene el formato esperado.', result)
+      onError('La respuesta del Apps Script no tiene el formato esperado.')
+    }
+  }
 
-  return (
-    <article className="group overflow-hidden rounded-[22px] border border-[#dde3dc] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(35,75,52,0.10)]">
-      <div className={`relative h-52 overflow-hidden ${program.color}`}>
-        <div className="absolute -right-14 -top-14 size-52 rounded-full border border-white/50" />
-        <div className="absolute -right-5 -top-5 size-36 rounded-full border border-white/60" />
-        <div className="absolute bottom-[-70px] left-[-36px] size-44 rounded-full bg-white/25" />
-        <span className={`absolute left-6 top-6 text-[11px] font-bold uppercase tracking-[0.16em] ${program.accent}`}>
-          {program.faculty}
-        </span>
-        <div className="absolute bottom-6 left-1/2 grid size-24 -translate-x-1/2 place-items-center rounded-full bg-white/75 shadow-[0_12px_30px_rgba(44,70,54,0.12)] backdrop-blur-sm">
-          <Icon size={42} strokeWidth={1.35} className={program.accent} />
-        </div>
-        <span className="absolute bottom-5 right-5 grid size-10 translate-y-2 place-items-center rounded-full bg-[#183629] text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-          <ArrowUpRight size={17} />
-        </span>
-      </div>
-      <div className="p-6">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#718078]">
-          <span>{program.level}</span>
-          <span className="size-1 rounded-full bg-[#b7c1ba]" />
-          <span>{program.modality}</span>
-        </div>
-        <h3 className="mt-3 min-h-14 text-[21px] font-semibold leading-tight tracking-[-0.035em] text-[#20372b]">
-          {program.name}
-        </h3>
-        <p className="mt-3 min-h-[72px] text-sm leading-6 text-[#68766f]">
-          {program.description}
-        </p>
-        <div className="mt-5 flex items-center justify-between border-t border-[#edf0ed] pt-4">
-          <span className="flex items-center gap-2 text-xs font-medium text-[#758179]">
-            <Clock3 size={15} /> {program.duration}
-          </span>
-          <button type="button" className="flex items-center gap-1 text-sm font-bold text-[#315b45]">
-            Ver programa <ArrowRight size={15} />
-          </button>
-        </div>
-      </div>
-    </article>
-  )
+  script.async = true
+  script.src = requestUrl
+  script.onload = () => {
+    scriptLoaded = true
+    console.info('[hoja] El navegador cargó la respuesta del Apps Script.', {
+      callbackReceived,
+      requestUrl,
+    })
+  }
+  script.onerror = (event) => {
+    settled = true
+    window.clearTimeout(timeoutId)
+    console.error('[hoja] El navegador no pudo cargar el Apps Script.', {
+      event,
+      requestUrl,
+    })
+    onError('No se pudo conectar con la hoja. Revisa la URL y la implementación del Apps Script.')
+  }
+
+  timeoutId = window.setTimeout(() => {
+    if (settled) return
+    settled = true
+    console.error('[hoja] Tiempo agotado esperando respuesta JSONP.', {
+      callbackReceived,
+      scriptLoaded,
+      requestUrl,
+      hint: 'Puede ser una autorización, despliegue o respuesta que no llamó al callback.',
+    })
+    onError('La hoja tardó demasiado en responder. Intenta actualizar la página.')
+  }, 15000)
+  document.head.appendChild(script)
+
+  return () => {
+    window.clearTimeout(timeoutId)
+    delete window[callbackName]
+    script.remove()
+    console.info('[hoja] Se limpió la petición del Apps Script.')
+  }
 }
 
 export default function App() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [activeFilter, setActiveFilter] = useState('Todos')
+  const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [expandedRows, setExpandedRows] = useState(() => new Set())
+  const [visibleCount, setVisibleCount] = useState(20)
+  const [selectedProgram, setSelectedProgram] = useState(null)
+  const [selectedModules, setSelectedModules] = useState([])
+  const [modulesLoading, setModulesLoading] = useState(false)
+  const [modulesError, setModulesError] = useState('')
 
-  const visiblePrograms = programs.filter((program) => {
-    const matchesFilter =
-      activeFilter === 'Todos' ||
-      program.level === activeFilter ||
-      program.modality === activeFilter
-    const matchesSearch =
-      program.name.toLowerCase().includes(search.toLowerCase()) ||
-      program.faculty.toLowerCase().includes(search.toLowerCase())
-    return matchesFilter && matchesSearch
-  })
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [search])
 
+  useEffect(() => {
+    if (!selectedProgram) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setSelectedProgram(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedProgram])
+
+  useEffect(() => {
+    if (!APPS_SCRIPT_URL.startsWith('https://script.google.com/macros/s/')) {
+      console.error('[hoja] La URL de Apps Script no está configurada correctamente:', APPS_SCRIPT_URL)
+      setError('Falta pegar la URL de la aplicación web de Apps Script en src/App.jsx.')
+      setLoading(false)
+      return undefined
+    }
+
+    setLoading(true)
+    setError('')
+    return loadSheetRows(
+      APPS_SCRIPT_URL,
+      {},
+      (result) => {
+        if (!Array.isArray(result.data)) {
+          setError('La respuesta no contiene la lista de programas.')
+          setLoading(false)
+          return
+        }
+        setRows(result.data)
+        setLoading(false)
+      },
+      (message) => {
+        setError(message)
+        setLoading(false)
+      },
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!selectedProgram) {
+      setSelectedModules([])
+      setModulesError('')
+      return undefined
+    }
+
+    setSelectedModules([])
+    setModulesError('')
+    setModulesLoading(true)
+
+    return loadSheetRows(
+      APPS_SCRIPT_URL,
+      { action: 'modules', code: selectedProgram.codigo },
+      (result) => {
+        if (!Array.isArray(result.modules)) {
+          setModulesError('La respuesta no contiene los módulos de este programa.')
+        } else {
+          setSelectedModules(result.modules)
+        }
+        setModulesLoading(false)
+      },
+      (message) => {
+        setModulesError(message)
+        setModulesLoading(false)
+      },
+    )
+  }, [selectedProgram])
+
+  const visibleRows = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase()
+    if (!query) return rows
+    return rows.filter((row) =>
+      columns.map(({ key }) => row[key] || '').join(' ').toLocaleLowerCase().includes(query),
+    )
+  }, [rows, search])
+
+  const displayedRows = visibleRows.slice(0, visibleCount)
   return (
-    <div className="min-h-screen overflow-hidden bg-[#f7f8f4] text-[#20372b]">
-      <div className="bg-[#20372b] px-5 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75 sm:px-8 sm:text-xs">
-        <span className="text-[#e5bd76]">Admisiones 2027</span>
-        <span className="mx-2 text-white/35">·</span>
-        Inscripciones abiertas para el nuevo ciclo
-        <a href="#admision" className="ml-2 underline decoration-white/30 underline-offset-4 transition hover:text-white">Conoce más</a>
-      </div>
-      <header className="relative z-30 border-b border-[#dde5de] bg-[#fbfcf8]/95">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
-          <Logo />
-
-          <nav className="hidden items-center gap-8 lg:flex" aria-label="Navegación principal">
-            <a href="#programas" className="text-sm font-semibold text-[#315b45]">Programas</a>
-            <a href="#universidad" className="text-sm text-[#66756d] transition hover:text-[#315b45]">La universidad</a>
-            <a href="#admision" className="text-sm text-[#66756d] transition hover:text-[#315b45]">Admisiones</a>
-            <a href="#vida" className="text-sm text-[#66756d] transition hover:text-[#315b45]">Vida universitaria</a>
-          </nav>
-
-          <div className="hidden items-center gap-3 sm:flex">
-            <button type="button" className="grid size-10 place-items-center rounded-full border border-[#dfe5df] text-[#59675f]">
-              <Search size={17} />
-            </button>
-            <a href="#admision" className="inline-flex items-center gap-2 rounded-full bg-[#1d4d38] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#153927]">
-              Postularme <ArrowUpRight size={16} />
-            </a>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            className="grid size-10 place-items-center rounded-full border border-[#dfe5df] sm:hidden"
-            aria-label="Abrir menú"
-          >
-            {menuOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
+    <div className="min-h-screen bg-[#f5f6f2] text-[#20372b]">
+      <header className="border-b border-[#e1e6df] bg-white">
+        <div className="mx-auto flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <a href="#inicio" className="flex items-center gap-3" aria-label="Inicio">
+            <span className="grid size-11 place-items-center rounded-2xl bg-[#1d4d38] text-white">
+              <BookOpen size={21} strokeWidth={1.8} />
+            </span>
+            <span>
+              <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-[#698073]">Consulta académica</span>
+              <span className="mt-0.5 block font-serif text-xl leading-none text-[#20372b]">Registros disponibles</span>
+            </span>
+          </a>
+          <span className="hidden items-center gap-2 rounded-full border border-[#e3e9e2] px-3.5 py-2 text-xs font-semibold text-[#607268] sm:inline-flex">
+            <span className="size-2 rounded-full bg-[#6f9a70]" />
+            Consulta de información
+          </span>
         </div>
-
-        {menuOpen && (
-          <nav className="border-t border-[#e5e9e4] px-5 py-4 sm:hidden" aria-label="Menú móvil">
-            <div className="flex flex-col gap-4 text-sm font-semibold">
-              <a href="#programas" onClick={() => setMenuOpen(false)}>Programas</a>
-              <a href="#universidad" onClick={() => setMenuOpen(false)}>La universidad</a>
-              <a href="#admision" onClick={() => setMenuOpen(false)}>Admisiones</a>
-              <a href="#vida" onClick={() => setMenuOpen(false)}>Vida universitaria</a>
-            </div>
-          </nav>
-        )}
       </header>
 
-      <main>
-        <section className="relative overflow-hidden bg-[#f1f3eb]">
-          <div className="absolute -left-48 -top-64 size-[560px] rounded-full border border-[#d5ddcf]" />
-          <div className="absolute -left-24 -top-40 size-[360px] rounded-full border border-[#dce3d7]" />
-          <div className="absolute bottom-[-190px] right-[-100px] size-[420px] rounded-full border border-[#d5ddcf]" />
-
-          <div className="mx-auto grid min-h-[590px] max-w-[1280px] items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:px-10">
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#d5dfd4] bg-white/70 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#58705f] shadow-sm">
-                <span className="size-1.5 rounded-full bg-[#c28b43]" />
-                Tu futuro empieza aquí
-              </div>
-              <h1 className="mt-7 max-w-[650px] text-[clamp(3.4rem,7.2vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.075em] text-[#183629]">
-                Elige lo que te mueve.
-                <span className="mt-3 block font-serif font-normal italic text-[#8b6939]">Crea lo que viene.</span>
-              </h1>
-              <p className="mt-7 max-w-lg text-base leading-7 text-[#66756d] sm:text-lg">
-                Una formación que conecta tus ideas con oportunidades reales. Descubre el programa que va contigo.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#programas" className="inline-flex items-center gap-3 rounded-full bg-[#1d4d38] px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(29,77,56,0.18)] transition hover:-translate-y-0.5 hover:bg-[#153927]">
-                  Encuentra tu programa <ArrowRight size={16} />
-                </a>
-                <a href="#admision" className="inline-flex items-center gap-2 rounded-full border border-[#bdc9c0] px-6 py-3.5 text-sm font-bold text-[#315b45] transition hover:border-[#315b45]">
-                  Proceso de admisión
-                </a>
-              </div>
-
-              <div className="mt-12 flex flex-wrap items-center gap-7 border-t border-[#ccd7ce] pt-6">
-                <div>
-                  <p className="text-2xl font-semibold tracking-[-0.04em]">24</p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8980]">Programas</p>
-                </div>
-                <span className="h-9 w-px bg-[#ccd7ce]" />
-                <div>
-                  <p className="text-2xl font-semibold tracking-[-0.04em]">92%</p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8980]">Graduación</p>
-                </div>
-                <span className="h-9 w-px bg-[#ccd7ce]" />
-                <div>
-                  <p className="text-2xl font-semibold tracking-[-0.04em]">15 mil</p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8980]">Graduados</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative mx-auto h-[470px] w-full max-w-[470px]">
-              <div className="absolute inset-4 overflow-hidden rounded-[46%_46%_28px_28px] bg-[#244c39] shadow-[0_28px_70px_rgba(33,62,44,0.2)]">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_68%_30%,rgba(207,177,119,0.32),transparent_38%),linear-gradient(145deg,#315d43,#193829_72%)]" />
-                <div className="absolute -right-20 top-8 size-80 rounded-full border border-white/10" />
-                <div className="absolute -right-8 top-20 size-56 rounded-full border border-white/10" />
-                <div className="absolute bottom-0 left-0 h-24 w-full bg-gradient-to-t from-black/20 to-transparent" />
-                <div className="absolute left-1/2 top-[42%] grid size-48 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#f0e8d5] shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
-                  <div className="grid size-40 place-items-center rounded-full border border-[#c8b98f]">
-                    <GraduationCap size={82} strokeWidth={1.1} className="text-[#315b45]" />
-                  </div>
-                </div>
-                <div className="absolute bottom-7 left-7 text-white/70">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Universidad Aurora</p>
-                  <p className="mt-1 font-serif text-2xl italic text-white">Aprender para transformar.</p>
-                </div>
-                <span className="absolute right-8 top-8 grid size-12 place-items-center rounded-full border border-white/20 bg-white/10 text-[#e7c98e] backdrop-blur-sm"><Award size={22} /></span>
-              </div>
-              <div className="absolute bottom-9 left-0 rounded-2xl border border-white/70 bg-white px-5 py-4 shadow-[0_18px_42px_rgba(35,75,52,0.16)]">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-10 place-items-center rounded-full bg-[#e7eddf] text-[#315b45]">
-                    <Landmark size={19} />
-                  </span>
-                  <div>
-                    <p className="text-xs font-bold text-[#315b45]">Aprendizaje con propósito</p>
-                    <p className="mt-1 text-[11px] text-[#7a877f]">Conocimiento que transforma</p>
-                  </div>
-                </div>
-              </div>
-              <div className="absolute right-0 top-24 grid size-20 place-items-center rounded-full border-4 border-[#f1f3eb] bg-[#c18b46] text-white shadow-xl">
-                <span className="text-center"><Users size={21} className="mx-auto" /><span className="mt-1 block text-[9px] font-bold uppercase tracking-wider">Comunidad</span></span>
-              </div>
-            </div>
+      <main id="inicio" className="mx-auto w-full px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="flex flex-col justify-between gap-7 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#718078]">Registro académico · UNSXX</p>
+            <h1 className="mt-2 font-serif text-3xl leading-tight tracking-[-0.04em] text-[#20372b] sm:text-4xl">
+              Oferta académica
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#68766f]">
+              Consulta programas, sedes, modalidades y disponibilidad en un solo lugar.
+            </p>
           </div>
-        </section>
 
-        <section className="border-b border-[#dde4de] bg-[#fbfcf8]">
-          <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-center gap-x-12 gap-y-4 px-5 py-5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#7a867e] sm:px-8 lg:justify-between lg:px-10">
-            <span className="flex items-center gap-2"><GraduationCap size={16} /> Formación integral</span>
-            <span className="flex items-center gap-2"><FlaskConical size={16} /> Investigación aplicada</span>
-            <span className="flex items-center gap-2"><Users size={16} /> Comunidad activa</span>
-            <span className="flex items-center gap-2"><Landmark size={16} /> Impacto regional</span>
-          </div>
-        </section>
+          <label className="flex h-12 w-full items-center gap-3 rounded-xl border border-[#dce3dc] bg-white px-4 shadow-sm sm:w-80">
+            <Search size={17} className="shrink-0 text-[#7b8980]" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="w-full bg-transparent text-sm outline-none placeholder:text-[#9ba49e]"
+              placeholder="Buscar en la oferta académica"
+              aria-label="Buscar en la oferta académica"
+            />
+          </label>
+        </div>
 
-        <section id="programas" className="px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
-          <div className="mx-auto max-w-[1280px]">
-            <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#718078]">Oferta académica</p>
-                <h2 className="mt-4 text-5xl font-medium leading-[0.95] tracking-[-0.065em] text-[#20372b] sm:text-6xl">
-                  Encuentra tu <span className="font-serif font-normal italic text-[#657a58]">programa.</span>
-                </h2>
-              </div>
-              <label className="flex h-12 w-full items-center gap-3 rounded-full border border-[#dce3dc] bg-white px-5 lg:w-[320px]">
-                <Search size={17} className="text-[#7b8980]" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-[#9ba49e]"
-                  placeholder="Buscar programa"
-                />
-              </label>
-            </div>
-
-            <div className="mt-9 flex flex-wrap gap-2 border-b border-[#dde4de] pb-5">
-              {filters.map((filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setActiveFilter(filter)}
-                  className={`rounded-full px-5 py-2.5 text-xs font-bold transition ${
-                    activeFilter === filter
-                      ? 'bg-[#20372b] text-white'
-                      : 'border border-[#dde3dc] bg-white text-[#718078] hover:border-[#91a398]'
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-
-            {visiblePrograms.length > 0 ? (
-              <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {visiblePrograms.map((program) => (
-                  <ProgramCard key={program.name} program={program} />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-8 rounded-2xl border border-dashed border-[#ccd6ce] py-16 text-center text-sm text-[#718078]">
-                No encontramos programas con esos criterios.
-              </div>
+        <section className="mt-8 overflow-hidden rounded-2xl border border-[#e0e6df] bg-white shadow-[0_12px_38px_rgba(35,75,52,0.06)]" aria-label="Oferta académica disponible">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e8ece7] px-4 py-3 sm:px-5">
+            <h2 className="text-sm font-bold text-[#315b45]">2da LISTA DISPONIBLES</h2>
+            {!loading && !error && (
+              <span className="rounded-full bg-[#edf3ee] px-3 py-1 text-xs font-semibold text-[#315b45]">
+                {visibleRows.length} {visibleRows.length === 1 ? 'registro' : 'registros'}
+              </span>
             )}
           </div>
-        </section>
 
-        <section id="admision" className="bg-[#20372b] px-5 py-16 text-white sm:px-8 lg:px-10">
-          <div className="mx-auto grid max-w-[1280px] items-center gap-10 lg:grid-cols-[1fr_auto]">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#bbcbbf]">Admisiones 2027</p>
-              <h2 className="mt-4 max-w-3xl text-4xl font-medium leading-[1] tracking-[-0.055em] sm:text-5xl">
-                Tu próxima etapa comienza con una decisión.
-              </h2>
+          {loading ? (
+            <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-[#718078]">
+              <LoaderCircle size={19} className="animate-spin text-[#315b45]" />
+              Cargando registros…
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <a href="#" className="inline-flex items-center justify-center gap-3 rounded-full bg-[#f3f5ef] px-6 py-3.5 text-sm font-bold text-[#20372b]">
-                Ver requisitos <ArrowRight size={16} />
-              </a>
-              <a href="#" className="inline-flex items-center justify-center gap-3 rounded-full border border-white/25 px-6 py-3.5 text-sm font-bold text-white">
-                Solicitar información
-              </a>
+          ) : error ? (
+            <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
+              <span className="grid size-11 place-items-center rounded-full bg-[#fff4e7] text-[#9b682e]">
+                <AlertCircle size={20} />
+              </span>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-[#68766f]">{error}</p>
             </div>
-          </div>
-        </section>
+          ) : visibleRows.length === 0 ? (
+            <div className="flex min-h-56 items-center justify-center px-6 text-center text-sm text-[#718078]">
+              {rows.length ? 'No hay registros que coincidan con la búsqueda.' : 'La hoja no tiene registros disponibles.'}
+            </div>
+          ) : (
+            <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 2xl:grid-cols-3">
+              {displayedRows.map((row, index) => {
+                const availabilityText = String(row.disponibilidad || '').toLocaleUpperCase()
+                const available = availabilityText.includes('DISPONIBLE') && !availabilityText.includes('NO DISPONIBLE')
+                const detailColumns = columns.filter(
+                  (column) => !['codigo', 'programa', 'tipo'].includes(column.key),
+                )
+                const rowKey = `${row.codigo}-${row.resolucion}-${index}`
+                const isExpanded = expandedRows.has(rowKey)
 
-        <section id="universidad" className="px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
-          <div className="mx-auto grid max-w-[1280px] gap-12 lg:grid-cols-2 lg:items-center">
-            <div className="relative min-h-[430px] overflow-hidden rounded-[28px] bg-[#dce4d7]">
-              <div className="absolute inset-x-0 bottom-0 h-[58%] bg-[#8e9d84]" />
-              <div className="absolute bottom-0 left-[9%] h-[72%] w-[82%] rounded-t-[150px] bg-[#f2edda]" />
-              <div className="absolute bottom-0 left-[20%] h-[51%] w-[60%] rounded-t-[110px] bg-[#b8c3a9]" />
-              <div className="absolute bottom-0 left-[34%] h-[39%] w-[32%] rounded-t-[80px] bg-[#789078]" />
-              <div className="absolute left-8 top-8 rounded-full bg-white/90 px-4 py-2 text-xs font-bold text-[#315b45]">
-                Campus principal
-              </div>
-              <div className="absolute bottom-8 right-8 grid size-20 place-items-center rounded-full bg-[#e9cfa8] text-[#315b45]">
-                <Landmark size={36} strokeWidth={1.4} />
-              </div>
-            </div>
+                return (
+                  <article
+                    key={rowKey}
+                    className="relative min-w-0 rounded-xl border border-[#e5eae4] bg-[#fdfefc] p-4 transition duration-200 hover:border-[#c9d7cc] hover:shadow-[0_8px_24px_rgba(35,75,52,0.07)] sm:p-5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="max-w-[55%] truncate pr-2 font-mono text-sm font-bold tracking-wide text-[#315b45]">
+                        {row.codigo || 'Sin código'}
+                      </span>
+                      {row.tipo && (
+                        <span className="absolute right-0 top-0 inline-flex max-w-[48%] items-center gap-2 truncate rounded-bl-xl rounded-tr-xl border-b border-l border-[#d8e8d9] bg-[#edf5ed] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#416b47]">
+                          <span className={`size-2 shrink-0 rounded-full ${available ? 'bg-[#54a36b] shadow-[0_0_0_3px_rgba(84,163,107,0.12)]' : 'bg-[#a1aaa3]'}`} />
+                          {row.tipo}
+                        </span>
+                      )}
+                    </div>
 
-            <div className="lg:px-10">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#718078]">Una comunidad para crecer</p>
-              <h2 className="mt-4 text-5xl font-medium leading-[0.95] tracking-[-0.065em] text-[#20372b]">
-                Aprende, descubre y <span className="font-serif font-normal italic text-[#657a58]">trasciende.</span>
-              </h2>
-              <p className="mt-6 max-w-xl text-base leading-7 text-[#68766f]">
-                Vivir la Universidad Aurora es acceder a experiencias que combinan excelencia académica,
-                innovación y participación. Aquí encontrarás espacios para investigar, crear y construir tu futuro.
+                    <h3 className="mt-3 min-h-6 text-lg font-semibold leading-snug text-[#263b2f]">
+                      {row.programa || 'Programa sin nombre'}
+                    </h3>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-[#e9eee8] pt-3">
+                      <button
+                        type="button"
+                        aria-expanded={isExpanded}
+                        onClick={() => setExpandedRows((current) => {
+                          const next = new Set(current)
+                          if (next.has(rowKey)) next.delete(rowKey)
+                          else next.add(rowKey)
+                          return next
+                        })}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#416b47] transition hover:text-[#20372b]"
+                      >
+                        {isExpanded ? 'Ocultar detalles' : 'Ver detalles'}
+                        {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProgram(row)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#dce6dc] px-3 py-1.5 text-xs font-semibold text-[#536c5a] transition hover:bg-[#f4f8f3]"
+                      >
+                        <BookOpen size={14} /> Ver módulos
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#e9eee8] pt-3 sm:grid-cols-3">
+                        {detailColumns.map((column) => (
+                          <div key={column.key} className="min-w-0">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#87948b]">
+                              {column.label}
+                            </p>
+                            <p className="mt-1 break-words text-sm leading-5 text-[#53645a]">
+                              {row[column.key] || '—'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                )
+              })}
+            </div>
+          )}
+
+          {!loading && !error && visibleRows.length > 0 && (
+            <div className="flex flex-col items-center gap-2 border-t border-[#e8ece7] px-4 py-5">
+              <p className="text-xs text-[#87948b]">
+                Mostrando {displayedRows.length} de {visibleRows.length} registros
               </p>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-[#dde4de] p-5">
-                  <CalendarDays size={20} className="text-[#657a58]" />
-                  <p className="mt-4 text-sm font-bold">Calendario académico</p>
-                  <p className="mt-1 text-xs leading-5 text-[#7a877f]">Fechas, actividades y eventos.</p>
-                </div>
-                <div id="vida" className="rounded-2xl border border-[#dde4de] p-5">
-                  <Users size={20} className="text-[#657a58]" />
-                  <p className="mt-4 text-sm font-bold">Vida universitaria</p>
-                  <p className="mt-1 text-xs leading-5 text-[#7a877f]">Comunidades y experiencias.</p>
-                </div>
-              </div>
+              {displayedRows.length < visibleRows.length && (
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((count) => count + 20)}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#d8e3d9] bg-white px-5 py-2.5 text-sm font-semibold text-[#315b45] shadow-sm transition hover:border-[#9fb5a3] hover:bg-[#f7faf6]"
+                >
+                  Mostrar más <ChevronDown size={16} />
+                </button>
+              )}
             </div>
-          </div>
+          )}
         </section>
+
+        <p className="mt-4 text-xs leading-5 text-[#8a968e]">
+          La información mostrada proviene de la hoja de cálculo y se presenta en modo de consulta.
+        </p>
       </main>
 
-      <footer className="bg-[#17271f] px-5 py-10 text-white sm:px-8 lg:px-10">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
-          <Logo inverse />
-          <nav className="flex flex-wrap gap-6 text-xs text-white/65" aria-label="Enlaces del pie de página">
-            <a href="#">Estudiantes</a>
-            <a href="#">Docentes</a>
-            <a href="#">Egresados</a>
-            <a href="#">Contacto</a>
-          </nav>
-          <p className="text-xs text-white/45">© 2027 Universidad Aurora</p>
+      {selectedProgram && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#17271f]/55 p-0 backdrop-blur-sm sm:items-center sm:p-5"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedProgram(null)
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modules-dialog-title"
+            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-[#e1e8df] bg-[#fbfcf9] shadow-2xl sm:rounded-3xl"
+          >
+            <header className="flex items-start justify-between gap-5 border-b border-[#e5ebe3] bg-white px-5 py-5 sm:px-7">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#748578]">Malla curricular</p>
+                <h2 id="modules-dialog-title" className="mt-2 font-serif text-2xl leading-tight text-[#20372b] sm:text-3xl">
+                  {selectedProgram.programa || 'Programa académico'}
+                </h2>
+                <p className="mt-2 font-mono text-xs font-semibold text-[#58705f]">{selectedProgram.codigo}</p>
+              </div>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setSelectedProgram(null)}
+                aria-label="Cerrar módulos"
+                className="grid size-10 shrink-0 place-items-center rounded-full border border-[#e1e8df] bg-white text-[#607268] transition hover:bg-[#f2f5f0]"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+              {modulesLoading ? (
+                <div className="flex min-h-48 items-center justify-center gap-3 text-sm text-[#718078]">
+                  <LoaderCircle size={19} className="animate-spin text-[#315b45]" />
+                  Cargando módulos…
+                </div>
+              ) : modulesError ? (
+                <div className="rounded-2xl border border-[#eadfce] bg-[#fffaf3] px-5 py-8 text-center text-sm text-[#8b6939]">
+                  {modulesError}
+                </div>
+              ) : selectedModules.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#d8e2d8] bg-white px-5 py-12 text-center text-sm text-[#718078]">
+                  No se encontraron módulos para este código académico.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedModules.map((module, index) => (
+                    <article key={`${module.numero}-${module.nombre}-${index}`} className="rounded-2xl border border-[#e1e8df] bg-white p-4 sm:p-5">
+                      <div className="flex items-start gap-4">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#edf4eb] font-mono text-sm font-bold text-[#416b47]">
+                          {module.numero || index + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#87948b]">
+                            Módulo {module.numero || index + 1}
+                          </p>
+                          <h3 className="mt-1 text-sm font-bold uppercase leading-6 tracking-[0.025em] text-[#263b2f] sm:text-base">
+                            {String(module.nombre || '').toLocaleUpperCase('es')}
+                          </h3>
+                          {Array.isArray(module.contenido) && module.contenido.length > 0 && (
+                            <ul className="mt-3 space-y-2 border-t border-[#edf0ed] pt-3">
+                              {module.contenido.map((line, lineIndex) => {
+                                const text = String(line || '').trim()
+                                const formatted = text
+                                  ? text.charAt(0).toLocaleUpperCase('es') + text.slice(1)
+                                  : ''
+                                return formatted ? (
+                                  <li key={`${lineIndex}-${formatted}`} className="flex gap-2.5 text-sm leading-6 text-[#53645a]">
+                                    <span className="mt-[9px] size-1.5 shrink-0 rounded-full bg-[#83a082]" />
+                                    <span>{formatted}</span>
+                                  </li>
+                                ) : null
+                              })}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
+      )}
+
+      <footer className="border-t border-[#e1e6df] bg-white px-4 py-5 text-center text-xs text-[#8a968e] sm:px-6 lg:px-8">
+        Consulta académica · Información de registros disponibles
       </footer>
     </div>
   )
