@@ -145,3 +145,10 @@ textarea {
     animation-delay: 0ms !important;
   }
 }
+
+/* Evita imprimir o guardar como PDF la página */
+@media print {
+  body {
+    display: none !important;
+  }
+}

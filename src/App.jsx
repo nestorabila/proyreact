@@ -1,3 +1,4 @@
+// git push -u origin main
 import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, ArrowUpRight, BookOpen, ChevronDown, ChevronUp, LoaderCircle, Search, X } from 'lucide-react'
 
@@ -132,6 +133,11 @@ function loadPublicSheet(sheetName) {
     window[callbackName] = (response) => {
       cleanup()
       if (response?.status !== 'ok' || !response.table) {
+        const reason = response?.errors?.[0]?.reason
+        if (reason === 'access_denied' || reason === 'user_not_authenticated') {
+          reject(new Error('Sin permisos'))
+          return
+        }
         const message = response?.errors?.[0]?.detailed_message
           || response?.errors?.[0]?.message
           || 'Google Sheets no devolvió datos para esta hoja.'
@@ -154,7 +160,7 @@ function loadPublicSheet(sheetName) {
     script.src = requestUrl
     script.onerror = () => {
       cleanup()
-      reject(new Error(`No se pudo leer la hoja pública “${sheetName}”.`))
+      reject(new Error('Sin permisos'))
     }
 
     timeoutId = window.setTimeout(() => {
@@ -237,6 +243,7 @@ export default function App() {
   const [modulesLoading, setModulesLoading] = useState(false)
   const [modulesError, setModulesError] = useState('')
   const [projectPreview, setProjectPreview] = useState(null)
+  const [previewHidden, setPreviewHidden] = useState(false)
 
   useEffect(() => {
     setVisibleCount(20)
@@ -253,11 +260,45 @@ export default function App() {
 
   useEffect(() => {
     if (!projectPreview) return undefined
+
+    const hide = () => setPreviewHidden(true)
+
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') setProjectPreview(null)
+      if (event.key === 'Escape') {
+        setProjectPreview(null)
+        return
+      }
+      const key = event.key.toLowerCase()
+      const blockedCombo = (event.ctrlKey || event.metaKey) && ['p', 's', 'c', 'u'].includes(key)
+      const screenshotCombo = event.metaKey && event.shiftKey && ['s', '3', '4', '5'].includes(key)
+      if (event.key === 'PrintScreen' || blockedCombo || screenshotCombo) {
+        event.preventDefault()
+        hide()
+        navigator.clipboard?.writeText('').catch(() => {})
+      }
     }
+
+    // Si la ventana pierde el foco (herramienta de recortes, cambio de pestaña), se oculta el documento.
+    // Se ignora cuando el foco pasa al propio iframe del documento.
+    const onBlur = () => {
+      window.setTimeout(() => {
+        if (document.activeElement?.tagName !== 'IFRAME') hide()
+      }, 0)
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') hide()
+    }
+
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyDown)
+    window.addEventListener('blur', onBlur)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyDown)
+      window.removeEventListener('blur', onBlur)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [projectPreview])
 
   useEffect(() => {
@@ -476,11 +517,13 @@ export default function App() {
                         {projectUrl ? (
                           <button
                             type="button"
-                            onClick={() => setProjectPreview({
-                              url: projectUrl,
+                            onClick={() => {
+                              setPreviewHidden(false)
+                              setProjectPreview({
                               previewUrl: getProjectPreviewUrl(projectUrl),
                               title: row.programa || row.codigo || 'Proyecto académico',
-                            })}
+                              })
+                            }}
                             className="inline-flex items-center gap-1.5 rounded-full bg-[#1c355c] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#132542]"
                           >
                             Ver proyecto <ArrowUpRight size={14} />
@@ -661,27 +704,50 @@ export default function App() {
               </button>
             </header>
 
-            <div className="min-h-0 flex-1 p-3 sm:p-5">
+            <div
+              className="protected-preview relative min-h-0 flex-1 select-none p-3 sm:p-5"
+              onContextMenu={(event) => event.preventDefault()}
+              onDragStart={(event) => event.preventDefault()}
+            >
               <iframe
                 src={projectPreview.previewUrl}
                 title={`Vista previa de ${projectPreview.title}`}
-                className="h-[60vh] min-h-[280px] w-full rounded-xl border border-[#e0e5ed] bg-white sm:rounded-2xl"
-                allowFullScreen
+                className={`h-[60vh] min-h-[280px] w-full rounded-xl border border-[#e0e5ed] bg-white transition sm:rounded-2xl ${previewHidden ? 'invisible' : ''}`}
+                sandbox="allow-scripts allow-same-origin"
+                referrerPolicy="no-referrer"
               />
+              {/* Tapa el botón "abrir en ventana nueva" del visor de Google Drive */}
+              <div
+                aria-hidden="true"
+                className="absolute right-3 top-3 h-14 w-20 rounded-tr-xl bg-transparent sm:right-5 sm:top-5 sm:rounded-tr-2xl"
+              />
+              {/* Marca de agua */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-3 grid place-items-center overflow-hidden sm:inset-5"
+              >
+                <span className="-rotate-30 whitespace-nowrap text-4xl font-bold uppercase tracking-[0.3em] text-[#1c355c]/10 sm:text-6xl">
+                  Solo consulta
+                </span>
+              </div>
+              {previewHidden && (
+                <div className="absolute inset-3 flex flex-col items-center justify-center gap-3 rounded-xl border border-[#e0e5ed] bg-white text-center sm:inset-5 sm:rounded-2xl">
+                  <p className="text-sm text-[#56657d]">Vista protegida. El documento se ocultó.</p>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewHidden(false)}
+                    className="rounded-full bg-[#1c355c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#132542]"
+                  >
+                    Continuar viendo
+                  </button>
+                </div>
+              )}
             </div>
 
-            <footer className="flex flex-col items-center justify-between gap-3 border-t border-[#e4e8ef] bg-white px-5 py-4 sm:flex-row sm:px-6">
-              <p className="text-center text-xs text-[#8692a6] sm:text-left">
-                Si no aparece la vista previa, abre el proyecto directamente.
+            <footer className="border-t border-[#e4e8ef] bg-white px-5 py-4 sm:px-6">
+              <p className="text-center text-xs text-[#8692a6]">
+                Documento de solo lectura: no se permite descargar, imprimir ni abrir fuera de esta vista.
               </p>
-              <a
-                href={projectPreview.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#1c355c] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#132542]"
-              >
-                Entrar al proyecto <ArrowUpRight size={16} />
-              </a>
             </footer>
           </section>
         </div>
